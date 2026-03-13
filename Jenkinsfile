@@ -109,13 +109,6 @@ pipeline {
                                 sh "docker build -t ${ADMIN_APP_NAME}:${ADMIN_IMAGE_TAG} -t ${ADMIN_APP_NAME}:latest ."
                                 sh "docker images | grep ${ADMIN_APP_NAME}"
 
-                                // 关键：导出镜像并导入 K3s containerd
-                                echo "===== 导入 ${ADMIN_APP_NAME} 镜像到 K3s ====="
-                                sh """
-                                    docker save -o ${WORKSPACE}/${ADMIN_APP_NAME}.tar ${ADMIN_APP_NAME}:${ADMIN_IMAGE_TAG}
-                                    ${K3S_CTR_CMD} images import ${WORKSPACE}/${ADMIN_APP_NAME}.tar
-                                    rm -f ${WORKSPACE}/${ADMIN_APP_NAME}.tar  // 清理临时文件
-                                """
                             }
                         }
                     }
@@ -129,13 +122,6 @@ pipeline {
                                 sh "docker build -t ${EXECUTOR_APP_NAME}:${EXECUTOR_IMAGE_TAG} -t ${EXECUTOR_APP_NAME}:latest ."
                                 sh "docker images | grep ${EXECUTOR_APP_NAME}"
 
-                                // 关键：导出镜像并导入 K3s containerd
-                                echo "===== 导入 ${EXECUTOR_APP_NAME} 镜像到 K3s ====="
-                                sh """
-                                    docker save -o ${WORKSPACE}/${EXECUTOR_APP_NAME}.tar ${EXECUTOR_APP_NAME}:${EXECUTOR_IMAGE_TAG}
-                                    ${K3S_CTR_CMD} images import ${WORKSPACE}/${EXECUTOR_APP_NAME}.tar
-                                    rm -f ${WORKSPACE}/${EXECUTOR_APP_NAME}.tar  // 清理临时文件
-                                """
                             }
                         }
                     }
