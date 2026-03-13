@@ -48,14 +48,14 @@ pipeline {
         }
 
         // 阶段3：构建镜像（并行构建 Admin + Executor，提高效率）
-        stage('统一编译') {
+        stage('预编译core模块') {
             steps {
                 script {
-                    echo "===== 统一编译所有模块（解决依赖） ====="
+                    echo "===== 预编译 xxl-job-core 并 install ====="
                     // 切到项目根目录
                     dir("./") {
                         // 编译并 install 所有模块到本地 Maven 仓库
-                        sh "mvn clean install -DskipTests"
+                        sh "mvn clean install -pl xxl-job-core -DskipTests"
                     }
                 }
             }
