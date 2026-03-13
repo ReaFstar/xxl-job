@@ -160,15 +160,6 @@ pipeline {
 
     // 后置操作：全局结果提示 + 异常清理
     post {
-        success {
-            echo "✅ XXL-Job（Admin + Executor）部署成功！"
-            echo "🔍 访问地址：http://<K3s节点IP>:<Admin NodePort>/xxl-job-admin"
-        }
-        failure {
-            echo "❌ 部署失败，请查看流水线日志排查问题！"
-            // 失败时清理已部署的资源（可选）
-            sh "kubectl delete -f ${ADMIN_YAML_PATH} -f ${EXECUTOR_YAML_PATH} -n ${NAMESPACE} || true"
-        }
         always {
             echo "📝 流水线执行完成，开始清理工作空间临时文件"
             sh "cleanWs()"  // 清理 Jenkins 工作空间
