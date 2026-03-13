@@ -41,8 +41,8 @@ pipeline {
                 script {
                     echo "===== 拉取代码到 Jenkins 节点 ====="
                     checkout scm  // 拉取代码到工作空间（默认路径：/var/jenkins_home/workspace/任务名/）
-                    // 验证代码拉取成功
-                    sh "ls -l ./xxl-job-admin/ && ls -l ./xxl-job-executor-samples/xxl-job-executor-springboot/"
+                    // 验证代码拉取成功（修正执行器目录路径）
+                    sh "ls -l ./xxl-job-admin/ && ls -l ./xxl-job-executor-samples/xxl-job-executor-sample-springboot/"
                 }
             }
         }
@@ -72,7 +72,8 @@ pipeline {
                     steps {
                         script {
                             echo "===== 构建 ${EXECUTOR_APP_NAME} 镜像 ====="
-                            dir("xxl-job-executor-samples/xxl-job-executor-springboot") {
+                            // 修正：和环境变量路径一致（加 sample）
+                            dir("xxl-job-executor-samples/xxl-job-executor-sample-springboot") {
                                 // Step1: Maven 打包 SpringBoot 项目
                                 sh "mvn clean package -DskipTests"
                                 // Step2: 构建镜像（打版本标签 + latest 标签）
@@ -97,7 +98,7 @@ pipeline {
                     sh """
                         sed -i "s|xxl-job-admin:latest|${ADMIN_APP_NAME}:${ADMIN_IMAGE_TAG}|g" ${ADMIN_YAML_PATH}
                         kubectl apply -f ${ADMIN_YAML_PATH} -n ${NAMESPACE}
-                        // 等待 Admin Pod 就绪
+                        # 修正：shell 注释用 # 而非 //
                         kubectl wait --for=condition=ready pod -l app=${ADMIN_APP_NAME} -n ${NAMESPACE} --timeout=300s
                     """
 
@@ -106,7 +107,7 @@ pipeline {
                     sh """
                         sed -i "s|xxl-job-executor:latest|${EXECUTOR_APP_NAME}:${EXECUTOR_IMAGE_TAG}|g" ${EXECUTOR_YAML_PATH}
                         kubectl apply -f ${EXECUTOR_YAML_PATH} -n ${NAMESPACE}
-                        // 等待 Executor Pod 就绪
+                        # 修正：shell 注释用 # 而非 //
                         kubectl wait --for=condition=ready pod -l app=${EXECUTOR_APP_NAME} -n ${NAMESPACE} --timeout=300s
                     """
                 }
@@ -121,15 +122,15 @@ pipeline {
                     sh """
                         kubectl get pods -n ${NAMESPACE} -l app=${ADMIN_APP_NAME}
                         kubectl get svc -n ${NAMESPACE} -l app=${ADMIN_APP_NAME}
-                        // 检查 Admin 服务是否可访问
-                        kubectl exec -n ${NAMESPACE} \$(kubectl get pods -n ${NAMESPACE} -l app=${ADMIN_APP_NAME} -o jsonpath='{.items[0].metadata.name}') -- curl -s http://localhost:8080/xxl-job-admin/actuator/health
+                        # 修正：XXL-Job v3.3.2 无 actuator，改用登录页检查
+                        kubectl exec -n ${NAMESPACE} \$(kubectl get pods -n ${NAMESPACE} -l app=${ADMIN_APP_NAME} -o jsonpath='{.items[0].metadata.name}') -- curl -s http://localhost:8080/xxl-job-admin/toLogin
                     """
 
                     echo "===== 验证 ${EXECUTOR_APP_NAME} 部署结果 ====="
                     sh """
                         kubectl get pods -n ${NAMESPACE} -l app=${EXECUTOR_APP_NAME}
                         kubectl get svc -n ${NAMESPACE} -l app=${EXECUTOR_APP_NAME}
-                        // 检查 Executor 服务是否可访问
+                        # 检查 Executor 服务是否可访问
                         kubectl exec -n ${NAMESPACE} \$(kubectl get pods -n ${NAMESPACE} -l app=${EXECUTOR_APP_NAME} -o jsonpath='{.items[0].metadata.name}') -- nc -z localhost 9999
                     """
                 }
@@ -143,9 +144,8 @@ pipeline {
                     echo "===== 开始垃圾清理 ====="
                     // 1. 清理 Jenkins 节点上的旧镜像（保留最新标签）
                     sh """
-                        // 清理 Admin 旧镜像
+                        # 修正：shell 注释用 # 而非 //，转义符正确
                         docker images | grep ${ADMIN_APP_NAME} | grep -v "latest\\|${ADMIN_IMAGE_TAG}" | awk '{print \$3}' | xargs -r docker rmi -f
-                        // 清理 Executor 旧镜像
                         docker images | grep ${EXECUTOR_APP_NAME} | grep -v "latest\\|${EXECUTOR_IMAGE_TAG}" | awk '{print \$3}' | xargs -r docker rmi -f
                     """
                     // 2. 清理 K3s 集群内的失效 Pod（Evicted/Error 状态）
@@ -160,9 +160,25 @@ pipeline {
 
     // 后置操作：全局结果提示 + 异常清理
     post {
+        success {
+            echo "✅ XXL-Job（Admin + Executor）部署成功！"
+            echo "🔍 访问地址：http://<K3s节点IP>:30086/xxl-job-admin"
+        }
+        failure {
+            echo "❌ 部署失败，请查看流水线日志排查问题！"
+            // 安全回滚：先判断文件是否存在
+            sh """
+                if [ -f "${ADMIN_YAML_PATH}" ]; then
+                    kubectl delete -f ${ADMIN_YAML_PATH} -n ${NAMESPACE} || true
+                fi
+                if [ -f "${EXECUTOR_YAML_PATH}" ]; then
+                    kubectl delete -f ${EXECUTOR_YAML_PATH} -n ${NAMESPACE} || true
+                fi
+            """
+        }
         always {
             echo "📝 流水线执行完成，开始清理工作空间临时文件"
-            sh "cleanWs()"  // 清理 Jenkins 工作空间
+            cleanWs()  // 修正：直接调用函数，无需 sh 包裹
         }
     }
 }
