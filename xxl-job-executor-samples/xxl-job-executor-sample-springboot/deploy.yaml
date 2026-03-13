@@ -1,0 +1,97 @@
+---
+# 2. 执行器 Deployment（业务任务执行器）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xxl-job-executor
+  namespace: xxl-job
+  labels:
+    app: xxl-job-executor
+spec:
+  replicas: 1  # 多副本提高任务执行可用性
+  selector:
+    matchLabels:
+      app: xxl-job-executor
+  template:
+    metadata:
+      labels:
+        app: xxl-job-executor
+    spec:
+      # 安全上下文：解决目录权限问题
+      securityContext:
+        runAsUser: 0
+        fsGroup: 0
+      containers:
+        - name: xxl-job-executor
+          # 可选：用官方示例执行器镜像（测试用），生产建议替换为你自己的业务执行器镜像
+          image: xuxueli/xxl-job-executor-sample:2.4.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9999  # 执行器默认端口
+              name: http
+          # 核心配置（和 Admin 对接）
+          env:
+            # 执行器应用名（必须和 Admin 控制台配置的「执行器AppName」一致！）
+            - name: XXL_JOB_EXECUTOR_APPNAME
+              value: "xxl-job-executor-business"  # 自定义，比如业务执行器叫这个名字
+            # Admin 地址（填 Admin 的 Service 地址，自动注册用）
+            - name: XXL_JOB_ADMIN_ADDRESSES
+              value: "http://xxl-job-admin-service.xxl-job.svc.cluster.local:8080/xxl-job-admin"
+            # 通讯令牌（和 Admin 一致）
+            - name: XXL_JOB_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: xxl-job-secret
+                  key: access-token
+            # 执行器端口
+            - name: XXL_JOB_EXECUTOR_PORT
+              value: "9999"
+            # 日志目录（可选）
+            - name: XXL_JOB_EXECUTOR_LOGPATH
+              value: "/data/applogs/xxl-job/jobhandler"
+            - name: XXL_JOB_EXECUTOR_LOGRETENTIONDAYS
+              value: "30"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          # 健康检查
+          livenessProbe:
+            tcpSocket:
+              port: 9999
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 9999
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          # 日志挂载（可选）
+          volumeMounts:
+            - name: executor-logs
+              mountPath: /data/applogs/xxl-job/jobhandler
+              # 子路径：避免多副本挂载冲突
+              subPath: jobhandler-$(POD_NAME)
+      # hostPath 挂载：节点本地目录
+      volumes:
+        - name: executor-logs
+          hostPath:
+            # 节点本地存储目录
+            path: /data/xxl-job/executor/logs
+            type: DirectoryOrCreate
+
+---
+
+# 3. 执行器 Service（可选，手动注册时用，自动注册可省略）
+apiVersion: v1
+kind: Service
+metadata:
+  name: xxl-job-executor-svc
+  namespace: xxl-job
+spec:
+  selector:
+    app: xxl-job-executor
+  ports:
+    - port: 9999
+      targetPort: 9999
+  type: ClusterIP  # 集群内访问即可，无需暴露到外部
