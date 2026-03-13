@@ -49,22 +49,29 @@ pipeline {
 
         // 阶段3：构建镜像（并行构建 Admin + Executor，提高效率）
         stage('构建镜像') {
+            steps {
+                script {
+                    echo "===== 统一编译所有模块（解决依赖） ====="
+                    // 切到项目根目录
+                    dir("./") {
+                        // 编译并 install 所有模块到本地 Maven 仓库
+                        sh "mvn clean install -DskipTests"
+                    }
+                }
+            }
+        }
+
+        stage('构建镜像') {
             parallel {
                 stage('构建xxl-job-admin镜像') {
                     steps {
                         script {
                             echo "===== 构建 ${ADMIN_APP_NAME} 镜像 ====="
-                            // 切到项目根目录（xxl-job 主目录）
-                            dir("./") {
-                                // 先编译 core 模块，再编译 admin 模块
-                                sh "mvn clean package -pl xxl-job-core,xxl-job-admin -DskipTests"
-                                // 切回 admin 目录构建镜像
-                                dir("xxl-job-admin") {
-                                    sh """
-                                        docker build -t ${ADMIN_APP_NAME}:${ADMIN_IMAGE_TAG} -t ${ADMIN_APP_NAME}:latest .
-                                    """
-                                    sh "docker images | grep ${ADMIN_APP_NAME}"
-                                }
+                            dir("xxl-job-admin") {
+                                sh """
+                                    docker build -t ${ADMIN_APP_NAME}:${ADMIN_IMAGE_TAG} -t ${ADMIN_APP_NAME}:latest .
+                                """
+                                sh "docker images | grep ${ADMIN_APP_NAME}"
                             }
                         }
                     }
@@ -74,15 +81,10 @@ pipeline {
                     steps {
                         script {
                             echo "===== 构建 ${EXECUTOR_APP_NAME} 镜像 ====="
-                            // 修正：和环境变量路径一致（加 sample）
                             dir("xxl-job-executor-samples/xxl-job-executor-sample-springboot") {
-                                // Step1: Maven 打包 SpringBoot 项目
-                                sh "mvn clean package -DskipTests"
-                                // Step2: 构建镜像（打版本标签 + latest 标签）
                                 sh """
                                     docker build -t ${EXECUTOR_APP_NAME}:${EXECUTOR_IMAGE_TAG} -t ${EXECUTOR_APP_NAME}:latest .
                                 """
-                                // 验证镜像构建成功
                                 sh "docker images | grep ${EXECUTOR_APP_NAME}"
                             }
                         }
