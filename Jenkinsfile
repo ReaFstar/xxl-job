@@ -18,7 +18,7 @@ pipeline {
 
     stages {
         // 阶段1：前置检查（先检查环境，再拉代码）
-        stage('Pre-Check') {
+        stage('前置检查') {
             steps {
                 script {
                     echo "===== 开始前置检查 ====="
@@ -32,6 +32,32 @@ pipeline {
                     sh "kubectl create namespace ${NAMESPACE} || true"
                     echo "===== 前置检查通过 ====="
                 }
+            }
+        }
+
+
+        stage('前置清理') {
+            steps {
+                echo "==================开始清理历史构建资源===================="
+                 sh '''
+                    #删除旧的Deployment
+                    kubectl delete deployment ${ADMIN_APP_NAME} -n ${NAMESPACE} || true
+                    kubectl delete deployment ${EXECUTOR_APP_NAME} -n ${NAMESPACE} || true
+                    # 清理集群内终止形态的旧Pod
+                    kubectl delete pod -n ${NAMESPACE} --field-selector=status.phase=Failed || true
+                    kubectl delete pod -n ${NAMESPACE} --field-selector=status.phase=Succeeded || true
+                 '''
+                 // 清理本地构建产物
+                sh "rm -rf ${WORKSPACE}/@tmp || true"
+                // 清理docker冗余资源
+                sh '''
+                    # 停止并删除所有关联容器
+                    docker stop $(docker ps -a -q --filter name=${ADMIN_APP_NAME}) || true
+                    docker stop $(docker ps -a -q --filter name=${EXECUTOR_APP_NAME}) || true
+                    docker rm $(docker ps -a -q --filter name=${ADMIN_APP_NAME}) || true
+                    docker rm $(docker ps -a -q --filter name=${EXECUTOR_APP_NAME}) || true
+                '''
+                echo "===================历史资源清理完成======================"
             }
         }
 
