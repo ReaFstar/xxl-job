@@ -1,7 +1,5 @@
 pipeline {
     agent any
-    }
-
     tools {
         maven 'maven-3.8'  // 执行器是 SpringBoot 项目，需要 Maven 打包
     }
