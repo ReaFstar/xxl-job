@@ -24,7 +24,7 @@ spec:
       containers:
         - name: xxl-job-admin
           # 直接拉取官方镜像，无需自己构建
-          image: xuxueli/xxl-job-admin:latest
+          image: xxl-job-admin:latest
           imagePullPolicy: Never  # 优先用本地镜像，没有再拉取
           ports:
             - containerPort: 8080
