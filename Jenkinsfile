@@ -54,15 +54,17 @@ pipeline {
                     steps {
                         script {
                             echo "===== 构建 ${ADMIN_APP_NAME} 镜像 ====="
-                            dir("xxl-job-admin") {
-                                // Maven 打包项目
-                                sh "mvn clean package -DskipTests"
-                                // 构建镜像（打版本标签 + latest 标签）
-                                sh """
-                                    docker build -t ${ADMIN_APP_NAME}:${ADMIN_IMAGE_TAG} -t ${ADMIN_APP_NAME}:latest .
-                                """
-                                // 验证镜像构建成功
-                                sh "docker images | grep ${ADMIN_APP_NAME}"
+                            // 切到项目根目录（xxl-job 主目录）
+                            dir("./") {
+                                // 先编译 core 模块，再编译 admin 模块
+                                sh "mvn clean package -pl xxl-job-core,xxl-job-admin -DskipTests"
+                                // 切回 admin 目录构建镜像
+                                dir("xxl-job-admin") {
+                                    sh """
+                                        docker build -t ${ADMIN_APP_NAME}:${ADMIN_IMAGE_TAG} -t ${ADMIN_APP_NAME}:latest .
+                                    """
+                                    sh "docker images | grep ${ADMIN_APP_NAME}"
+                                }
                             }
                         }
                     }
