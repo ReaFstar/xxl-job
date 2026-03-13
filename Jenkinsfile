@@ -30,6 +30,8 @@ pipeline {
                     sh 'mvn -v || (echo "Maven 配置错误！" && exit 1)'
                     // 4. 检查命名空间，不存在则创建
                     sh "kubectl create namespace ${NAMESPACE} || true"
+                    echo "当前工作区路径：${WORKSPACE}"
+                    sh "ls -l ${WORKSPACE}"
                     echo "===== 前置检查通过 ====="
                 }
             }
@@ -82,6 +84,7 @@ pipeline {
                     dir("./") {
                         // 编译并 install 所有模块到本地 Maven 仓库
                         sh "mvn clean install -DskipTests -Dgpg.skip=true"
+
                     }
                 }
             }
@@ -207,8 +210,7 @@ pipeline {
             """
         }
         always {
-            echo "📝 流水线执行完成，开始清理工作空间临时文件"
-            cleanWs()  // 修正：直接调用函数，无需 sh 包裹
+            echo "📝 流水线执行完成，暂时不清理工作空间临时文件"
         }
     }
 }
