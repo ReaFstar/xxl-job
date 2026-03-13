@@ -48,7 +48,7 @@ pipeline {
         }
 
         // 阶段3：构建镜像（并行构建 Admin + Executor，提高效率）
-        stage('构建镜像') {
+        stage('统一编译') {
             steps {
                 script {
                     echo "===== 统一编译所有模块（解决依赖） ====="
