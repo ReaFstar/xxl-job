@@ -24,7 +24,7 @@ spec:
       containers:
         - name: xxl-job-executor
           # 可选：用官方示例执行器镜像（测试用），生产建议替换为你自己的业务执行器镜像
-          image: xxl-job-executor-sample:latest
+          image: xxl-job-executor:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 9999  # 执行器默认端口
