@@ -19,4 +19,4 @@ RUN mv $(ls -S /app/*.jar | head -1) /app/app.jar
 # log home: -e LOG_HOME=/data/applogs
 # jvm options: -e JAVA_OPTS="-Xms128m -Xmx128m"
 # app params: -e PARAMS="--server.port=8080"
-ENTRYPOINT ["sh","-c","java ${LOG_HOME:+-DLOG_HOME=$LOG_HOME} -jar $JAVA_OPTS /app.jar $PARAMS"]
+ENTRYPOINT ["sh","-c","java ${LOG_HOME:+-DLOG_HOME=$LOG_HOME} -jar $JAVA_OPTS /app/app.jar $PARAMS"]
