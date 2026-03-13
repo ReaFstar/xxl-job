@@ -55,7 +55,7 @@ pipeline {
                     // 切到项目根目录
                     dir("./") {
                         // 编译并 install 所有模块到本地 Maven 仓库
-                        sh "mvn clean install -pl xxl-job-core -DskipTests"
+                        sh "mvn clean install -pl xxl-job-core -DskipTests -Dgpg.skip=true"
                     }
                 }
             }
