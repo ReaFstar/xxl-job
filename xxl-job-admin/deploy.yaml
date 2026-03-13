@@ -1,0 +1,105 @@
+---
+# 2. Deployment（XXL-Job Admin 核心部署）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xxl-job-admin
+  namespace: xxl-job
+  labels:
+    app: xxl-job-admin
+spec:
+  replicas: 1  # 2副本保证高可用
+  selector:
+    matchLabels:
+      app: xxl-job-admin
+  template:
+    metadata:
+      labels:
+        app: xxl-job-admin
+    spec:
+      # 安全上下文：解决目录权限问题
+      securityContext:
+        runAsUser: 0
+        fsGroup: 0
+      containers:
+        - name: xxl-job-admin
+          # 直接拉取官方镜像，无需自己构建
+          image: xuxueli/xxl-job-admin:v3.3.2
+          imagePullPolicy: Never  # 优先用本地镜像，没有再拉取
+          ports:
+            - containerPort: 8080
+              name: http
+          # 环境变量配置（核心）
+          env:
+            # 数据库连接配置
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: xxl-job-secret
+                  key: mysql-url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: xxl-job-secret
+                  key: mysql-username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: xxl-job-secret
+                  key: mysql-password
+            # XXL-Job 核心配置
+            - name: XXL_JOB_ADMIN_ADDRESSES
+              value: "http://xxl-job-admin-svc.xxl-job.svc.cluster.local:8080/xxl-job-admin"
+            - name: XXL_JOB_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: xxl-job-secret
+                  key: access-token
+            # 服务器配置
+            - name: SERVER_PORT
+              value: "8080"
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: "/xxl-job-admin"
+          # 健康检查（保证服务可用性）
+          livenessProbe:
+            httpGet:
+              path: /xxl-job-admin/toLogin
+              port: 8080
+            initialDelaySeconds: 30  # 启动30秒后开始检查
+            periodSeconds: 10        # 每10秒检查一次
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /xxl-job-admin/toLogin
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          # 日志目录挂载（可选，避免容器重启日志丢失）
+          volumeMounts:
+            - name: admin-logs
+              mountPath: /data/applogs/xxl-job/admin
+      # 持久化日志
+      volumes:
+        - name: admin-logs
+          hostPath:
+            path: /data/xxl-job/admin/logs
+            type: DirectoryOrCreate
+
+---
+
+# 3. Service（暴露服务，供执行器和外部访问）
+apiVersion: v1
+kind: Service
+metadata:
+  name: xxl-job-admin-svc
+  namespace: xxl-job
+spec:
+  selector:
+    app: xxl-job-admin
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30086
+      name: http
+  type: NodePort  # 外部通过 NodePort 访问，生产可替换为 LoadBalancer/Ingress
