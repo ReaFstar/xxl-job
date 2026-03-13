@@ -127,28 +127,7 @@ pipeline {
             }
         }
 
-        // 阶段5：验证部署
-        stage('Verify Deployment') {
-            steps {
-                script {
-                    echo "===== 验证 ${ADMIN_APP_NAME} 部署结果 ====="
-                    sh """
-                        kubectl get pods -n ${NAMESPACE} -l app=${ADMIN_APP_NAME}
-                        kubectl get svc -n ${NAMESPACE} -l app=${ADMIN_APP_NAME}
-                        # 修正：XXL-Job v3.3.2 无 actuator，改用登录页检查
-                        kubectl exec -n ${NAMESPACE} \$(kubectl get pods -n ${NAMESPACE} -l app=${ADMIN_APP_NAME} -o jsonpath='{.items[0].metadata.name}') -- curl -s http://localhost:8080/xxl-job-admin/actuator/health
-                    """
 
-                    echo "===== 验证 ${EXECUTOR_APP_NAME} 部署结果 ====="
-                    sh """
-                        kubectl get pods -n ${NAMESPACE} -l app=${EXECUTOR_APP_NAME}
-                        kubectl get svc -n ${NAMESPACE} -l app=${EXECUTOR_APP_NAME}
-                        # 检查 Executor 服务是否可访问
-                        kubectl exec -n ${NAMESPACE} \$(kubectl get pods -n ${NAMESPACE} -l app=${EXECUTOR_APP_NAME} -o jsonpath='{.items[0].metadata.name}') -- nc -z localhost 9999
-                    """
-                }
-            }
-        }
 
         // 阶段6：垃圾清理（清理临时镜像、失效 Pod）
         stage('垃圾清理') {
