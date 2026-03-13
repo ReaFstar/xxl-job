@@ -149,9 +149,9 @@ pipeline {
                     // 1. 清理 Jenkins 节点上的旧镜像（保留最新标签）
                     sh """
                         // 清理 Admin 旧镜像
-                        docker images | grep ${ADMIN_APP_NAME} | grep -v "latest\|${ADMIN_IMAGE_TAG}" | awk '{print \$3}' | xargs -r docker rmi -f
+                        docker images | grep ${ADMIN_APP_NAME} | grep -v "latest\\|${ADMIN_IMAGE_TAG}" | awk '{print \$3}' | xargs -r docker rmi -f
                         // 清理 Executor 旧镜像
-                        docker images | grep ${EXECUTOR_APP_NAME} | grep -v "latest\|${EXECUTOR_IMAGE_TAG}" | awk '{print \$3}' | xargs -r docker rmi -f
+                        docker images | grep ${EXECUTOR_APP_NAME} | grep -v "latest\\|${EXECUTOR_IMAGE_TAG}" | awk '{print \$3}' | xargs -r docker rmi -f
                     """
                     // 2. 清理 K3s 集群内的失效 Pod（Evicted/Error 状态）
                     sh """
