@@ -36,7 +36,7 @@ spec:
               value: "xxl-job-executor-business"  # 自定义，比如业务执行器叫这个名字
             # Admin 地址（填 Admin 的 Service 地址，自动注册用）
             - name: XXL_JOB_ADMIN_ADDRESSES
-              value: "http://xxl-job-admin-service.xxl-job.svc.cluster.local:8080/xxl-job-admin"
+              value: "http://xxl-job-admin-svc.xxl-job.svc.cluster.local:8080/xxl-job-admin"
             # 通讯令牌（和 Admin 一致）
             - name: XXL_JOB_ACCESS_TOKEN
               valueFrom:
