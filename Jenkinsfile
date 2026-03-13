@@ -1,8 +1,5 @@
 pipeline {
-    agent {
-        node {
-            label 'vm-16-8-ubuntu'  // Jenkins 节点标签
-        }
+    agent any
     }
 
     tools {
