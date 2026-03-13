@@ -13,7 +13,7 @@ pipeline {
         EXECUTOR_IMAGE_TAG = 'v2.4.1'  // 执行器镜像版本
         // 代码内的 YAML 路径（关键：指向拉取代码后的目录，而非宿主机固定目录）
         ADMIN_YAML_PATH = 'xxl-job-admin/deploy.yaml'
-        EXECUTOR_YAML_PATH = 'xxl-job-executor-samples/xxl-job-executor-springboot/deploy.yaml'
+        EXECUTOR_YAML_PATH = 'xxl-job-executor-samples/xxl-job-executor-sample-springboot/deploy.yaml'
     }
 
     stages {
