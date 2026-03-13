@@ -12,8 +12,9 @@ ENV TZ=PRC
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # copy jar
-ADD target/xxl-job-executor-sample-springboot-*.jar /app.jar
+COPY target/*.jar /app/
 
+RUN mv $(ls -S /app/*.jar | head -1) /app/app.jar
 # command
 # log home: -e LOG_HOME=/data/applogs
 # jvm options: -e JAVA_OPTS="-Xms128m -Xmx128m"
