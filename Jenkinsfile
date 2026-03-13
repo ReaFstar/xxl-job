@@ -17,27 +17,7 @@ pipeline {
     }
 
     stages {
-        // 阶段1：前置检查（先检查环境，再拉代码）
-        stage('前置检查') {
-            steps {
-                script {
-                    echo "===== 开始前置检查 ====="
-                    // 1. 检查 kubectl 可用性
-                    sh 'kubectl version --client || (echo "kubectl 未安装或配置错误！" && exit 1)'
-                    // 2. 检查 Docker 可用性（构建镜像用）
-                    sh 'docker --version || (echo "Docker 未安装！" && exit 1)'
-                    // 3. 检查 Maven 可用性（执行器打包用）
-                    sh 'mvn -v || (echo "Maven 配置错误！" && exit 1)'
-                    // 4. 检查命名空间，不存在则创建
-                    sh "kubectl create namespace ${NAMESPACE} || true"
-                    echo "当前工作区路径：${WORKSPACE}"
-                    sh "ls -l ${WORKSPACE}"
-                    echo "===== 前置检查通过 ====="
-                }
-            }
-        }
-
-
+        // 阶段1：前置清理（先检查环境，再拉代码）
         stage('前置清理') {
             steps {
                 echo "==================开始清理历史构建资源===================="
@@ -156,7 +136,7 @@ pipeline {
                         kubectl get pods -n ${NAMESPACE} -l app=${ADMIN_APP_NAME}
                         kubectl get svc -n ${NAMESPACE} -l app=${ADMIN_APP_NAME}
                         # 修正：XXL-Job v3.3.2 无 actuator，改用登录页检查
-                        kubectl exec -n ${NAMESPACE} \$(kubectl get pods -n ${NAMESPACE} -l app=${ADMIN_APP_NAME} -o jsonpath='{.items[0].metadata.name}') -- curl -s http://localhost:8080/xxl-job-admin/toLogin
+                        kubectl exec -n ${NAMESPACE} \$(kubectl get pods -n ${NAMESPACE} -l app=${ADMIN_APP_NAME} -o jsonpath='{.items[0].metadata.name}') -- curl -s http://localhost:8080/xxl-job-admin/login
                     """
 
                     echo "===== 验证 ${EXECUTOR_APP_NAME} 部署结果 ====="

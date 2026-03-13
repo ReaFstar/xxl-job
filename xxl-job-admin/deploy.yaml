@@ -63,14 +63,14 @@ spec:
           # 健康检查（保证服务可用性）
           livenessProbe:
             httpGet:
-              path: /xxl-job-admin/toLogin
+              path: /xxl-job-admin/login
               port: 8080
             initialDelaySeconds: 30  # 启动30秒后开始检查
             periodSeconds: 10        # 每10秒检查一次
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
-              path: /xxl-job-admin/toLogin
+              path: /xxl-job-admin/login
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
